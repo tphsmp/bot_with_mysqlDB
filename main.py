@@ -3,7 +3,8 @@ import mysql.connector
 from errno import errorcode
 from datetime import datetime
 
-from settings import TOKEN, database
+from settings import TOKEN
+import db_settings
 
 bot = Bot(token=TOKEN, parse_mode='HTML')
 dp = Dispatcher(bot)
@@ -21,15 +22,19 @@ def get_magic_number(user_id):
     return magic_number
 
 
+def connect_to_database():
+    connection = mysql.connector.connect(
+        host=db_settings.host,
+        port=db_settings.port,
+        user=db_settings.user,
+        passwd=db_settings.passwd,
+        database=db_settings.database
+    )
+    return connection
+
+
 @dp.message_handler(commands=['start'])
 async def command_start(message: types.Message):
-    # database = mysql.connector.connect(
-    #     host='localhost',
-    #     port='3305',
-    #     user='root',
-    #     passwd='123456',
-    #     database='prattler_bot_db')
-
     date = datetime.date(datetime.today())
     time = datetime.strftime(datetime.today(), '%H:%M:%S')
 
@@ -39,6 +44,8 @@ async def command_start(message: types.Message):
 
     magic_number = get_magic_number(user_id)
     print(magic_number)
+
+    database = connect_to_database()
 
     try:
         if database:
@@ -71,14 +78,13 @@ async def command_start(message: types.Message):
         database.commit()
         with open(r'log.txt', 'a') as file:
             file.write('>>>> ' + str(first_name) + ' ' + str(last_name) + ' record done\n')
-        database.close()
     except mysql.connector.Error as err:
         print('Unable to make a record in db for some reasons, check errors below: ', err)
         with open(r'log.txt', 'a') as file:
             file.write('>>>> ' + str(first_name) + ' ' + str(last_name) + ' record error: ' + str(err) + '\n')
-    # finally:
-    #     if database:
-    #         database.close()
+    finally:
+        if database:
+            database.close()
 
     await bot.send_message(message.from_user.id,
                            f'Hello {first_name} {last_name}! Your user ID is: {user_id} '
