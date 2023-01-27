@@ -22,6 +22,7 @@ def get_magic_number(user_id):
     return magic_number
 
 
+# подключение к базе данных
 def connect_to_database():
     connection = mysql.connector.connect(
         host=db_settings.host,
@@ -35,6 +36,7 @@ def connect_to_database():
 
 @dp.message_handler(commands=['start'])
 async def command_start(message: types.Message):
+    # получение данных для БД
     date = datetime.date(datetime.today())
     time = datetime.strftime(datetime.today(), '%H:%M:%S')
 
@@ -45,8 +47,10 @@ async def command_start(message: types.Message):
     magic_number = get_magic_number(user_id)
     print(magic_number)
 
+    # подключение к БД
     database = connect_to_database()
 
+    # обработка соединения с БД
     try:
         if database:
             print('DB is connected')
@@ -58,6 +62,7 @@ async def command_start(message: types.Message):
         else:
             print(err)
 
+    # обработка записи в БД
     try:
         cursor = database.cursor()
         cursor.execute('CREATE TABLE IF NOT EXISTS visitors '
@@ -86,6 +91,7 @@ async def command_start(message: types.Message):
         if database:
             database.close()
 
+    # отправка сообщения пользователю
     await bot.send_message(message.from_user.id,
                            f'Hello {first_name} {last_name}! Your user ID is: {user_id} '
                            f'and your magic number is: {magic_number}')
